@@ -555,7 +555,11 @@ public class Tracker {
 		try {
 			BufferedWriter fout;
 			if (IDflag == true) {
-				fout = new BufferedWriter(new FileWriter(String.format("res/locationEntropy-%ds.txt", sampleRate)));
+				if (sampleRate <= 100) {
+					fout = new BufferedWriter(new FileWriter(String.format("res/locationEntropy-%ds.txt", sampleRate)));
+				} else {
+					fout = new BufferedWriter(new FileWriter("res/locationEntropy.txt"));
+				}
 				for (long loc : locationEntropy.keySet())
 					fout.write(String.format("%d\t%g\n", loc, locationEntropy.get(loc)));
 			} else {

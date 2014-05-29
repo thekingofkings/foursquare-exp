@@ -134,7 +134,7 @@ public class DataPreProcessor {
 	public static void main(String[] args) {
 		DataPreProcessor dpp = new DataPreProcessor();
 		// dpp.generateUserFiles();
-//		dpp.userDistribution();
+		dpp.userDistribution();
 		System.out.println(String.format("#user: %d\t#user with friends: %d", users.size(), friendship.size()));
 	}
 

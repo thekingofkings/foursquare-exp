@@ -17,7 +17,7 @@ public class User {
 	
 	int userID;
 	LinkedList<Record> records;
-	LinkedList<Integer> friends;
+	HashSet<Integer> friends;
 	HashSet<Long> locs;
 	
 	/*
@@ -26,8 +26,8 @@ public class User {
 	User( Record r ) {
 		userID = r.userID;
 		records = new LinkedList<Record>();
-		friends = new LinkedList<Integer>();
-		locs = null;
+		friends = new HashSet<Integer>();
+		locs = new HashSet<Long>();
 		
 		records.add(r);
 		if ( ! allUserSet.containsKey(r.userID))
@@ -42,8 +42,8 @@ public class User {
 		if (! allUserSet.containsKey(uid)) {
 			userID = uid;
 			records = new LinkedList<Record>();
-			friends = new LinkedList<Integer>();
-			locs = null;
+			friends = new HashSet<Integer>();
+			locs = new HashSet<Long>();
 			
 			try {
 				BufferedReader fin = new BufferedReader(new FileReader(String.format("%s/%d", userDir, uid)));
@@ -82,7 +82,8 @@ public class User {
 		String[] fileNames = dir.list();
 		for (String fn : fileNames) {
 			new User(Integer.parseInt(fn));
-		}		
+		}
+		System.out.println(String.format("Create %d users in total.", allUserSet.size()));
 	}
 	
 	@Override
@@ -92,8 +93,7 @@ public class User {
 	
 	
 	HashSet<Long> getLocations() {
-		if (locs == null) {
-			locs = new HashSet<Long>();
+		if (locs.size() == 0) {
 			for (Record r : records) {
 				if ( ! locs.contains(r.locID) )
 					locs.add( r.locID );
@@ -128,10 +128,10 @@ public class User {
 	
 	
 	public static void main(String[] args) {
-		User u0 = new User(0);
-		User u1 = new User(1);
-		System.out.println(u0);
-		System.out.println(u1);
+		for (int i = 0; i <= 335; i++) {
+			User u0 = new User(i);	
+			System.out.println(u0.getLocations().size());
+		}
 		//User.addAllUser();
 	}
 
