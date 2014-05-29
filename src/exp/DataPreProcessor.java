@@ -29,6 +29,9 @@ public class DataPreProcessor {
 	static HashMap<Integer, LinkedList<Integer>> friendship = new HashMap<Integer, LinkedList<Integer>>();
 	
 	
+	
+	//// Stage 1: Get sorted records for individual users.
+	
 	public DataPreProcessor() {
 		long t_start = System.currentTimeMillis();
 		System.out.println("Data pre-processing starts ...");
@@ -131,7 +134,7 @@ public class DataPreProcessor {
 	public static void main(String[] args) {
 		DataPreProcessor dpp = new DataPreProcessor();
 		// dpp.generateUserFiles();
-		dpp.userDistribution();
+//		dpp.userDistribution();
 		System.out.println(String.format("#user: %d\t#user with friends: %d", users.size(), friendship.size()));
 	}
 

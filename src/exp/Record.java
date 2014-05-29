@@ -76,6 +76,11 @@ public class Record implements Comparable<Record> {
 		return String.format("%d,%.6f,%.6f,%s,%d", userID, latitude, longitude, time, locID);
 	}
 	
+	
+	public String GPS() {
+		return String.format("%.6f%.6f", latitude, longitude);
+	}
+	
 
 	public static void main(String[] args) {
 		// test purpose
