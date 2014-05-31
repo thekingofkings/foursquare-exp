@@ -570,7 +570,7 @@ public class MiningFramework {
 					isMeeting = (ra.distanceTo(rb) < MiningFramework.distance_threshold);
 				}
 				
-				if ( isMeeting && ra.timestamp - lastMeet >= 3600) {
+				if ( isMeeting ) { //&& ra.timestamp - lastMeet >= 3600) {
 					freq ++;
 					double prob = 0;
 					/** different methods to calculate rho **/
@@ -589,7 +589,7 @@ public class MiningFramework {
 					double entro = 0;
 					if ( entroIDorDist ) {
 						if (locationEntropy.containsKey(ra.locID))
-							entro = (locationEntropy.get(ra.locID)); // + locationEntropy.get(rb.locID));
+							entro = locationEntropy.get(ra.locID); // + locationEntropy.get(rb.locID));
 						else
 							entro = 0;
 					} else {
@@ -703,7 +703,7 @@ public class MiningFramework {
 //				pmlc = alpha * measure + beta * locent;
 			}
 			
-			fout.write(String.format("%g\t%d\t%d\n", avg_w, (int)freq, friend_flag));
+			fout.write(String.format("ID: %d %d; %g\t%d\t%d\n", uaid, ubid, avg_w, (int)freq, friend_flag));
 			
 			/** write out the distance / time between consecutive meeting
 			if (meetingEvent.size() == 5) {
@@ -903,7 +903,7 @@ public class MiningFramework {
 				int friflag = Integer.parseInt(ls[3]);
 				if (freq > 0) {
 //					dbm = distanceBasedSumLogMeasure(uaid, ubid);
-					locidm = PAIRWISEweightEvent(uaid, ubid, fout2, friflag, false, true,  "prod", "min", "min", 1, sampleRate);
+					locidm = PAIRWISEweightEvent(uaid, ubid, fout2, friflag, true, true,  "prod", "min", "min", 1, sampleRate);
 					fout.write(String.format("%d\t%d\t%g\t%g\t%g\t%d\t%d%n", uaid, ubid, locidm[2], locidm[3], locidm[0], (int) locidm[1], friflag));
 				}
 			}
