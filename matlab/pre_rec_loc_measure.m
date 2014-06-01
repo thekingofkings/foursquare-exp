@@ -17,11 +17,12 @@ for condition = 1:5;
     sum(dml5(:,7)==0)
     size(dml5)
 
-    prod_colcEnt_cm = dml5(:,3);
-    locwf5 = dml5(:,4);
-    locpbg5 = dml5(:,5);
-    locf5 = dml5(:,6);
-    dl5 = dml5(:,7);
+    pbg_locen = dml5(:,3);
+    locentro = dml5(:,4);
+    pbg = dml5(:,5);
+    freq = dml5(:,6);
+    pbg_locen_td = dml5(:,7);
+    friLabel = dml5(:,8);
 
 
     % Use the prec-recal function from Internet.
@@ -34,11 +35,11 @@ for condition = 1:5;
     % My own precision-recall plot function    
     figure();
     hold on;
-    precisionRecallPlot( locf5, dl5, 'linestyle', '-', 'color', [0, 0, 0.8] );
-    precisionRecallPlot( locpbg5, dl5, 'r--' );
-    precisionRecallPlot( locwf5, dl5, 'linestyle', '--', 'color', [0, 0.75, 0] );
-    precisionRecallPlot( prod_colcEnt_cm, dl5, 'linestyle', '-', 'color', [0.3, 0.6, 0.9] );
-%     precisionRecallPlot( pgt_score, pgt_lable, 'linestyle', '-.', 'color', [0.5, 0.4, 0.9] );
+    precisionRecallPlot( freq, friLabel, 'linestyle', '-', 'color', [0, 0, 0.8] );
+    precisionRecallPlot( pbg, friLabel, 'r--' );
+    precisionRecallPlot( locentro, friLabel, 'linestyle', '--', 'color', [0, 0.75, 0] );
+    precisionRecallPlot( pbg_locen, friLabel, 'linestyle', '-', 'color', [0.3, 0.6, 0.9] );
+    precisionRecallPlot( pbg_locen_td, friLabel, 'linestyle', '-.', 'color', [0.5, 0.4, 0.9] );
 
 
 %     title(num2str(condition));
@@ -50,7 +51,7 @@ for condition = 1:5;
     xlabel('Recall', 'fontsize', 20);
     ylabel('Precision', 'fontsize', 20);
     set(gca, 'linewidth', 2, 'fontsize', 18);
-    legend({'Frequency', 'Personal', 'Global', 'Per+Glo+Tem'}, 'location', 'southwest');
+    legend({'Frequency', 'Personal', 'Global', 'Per+Glo', 'Per+Glo+Tem'}, 'location', 'southwest');
     %    'Location ID measure', 'Location ID frequency'}, 'fontsize', 16);
     set(gcf, 'PaperUnits', 'inches');
     print(['pr-', num2str(condition), 'c1000u.eps'], '-dpsc');

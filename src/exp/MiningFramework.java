@@ -614,11 +614,12 @@ public class MiningFramework {
 		}
 		
 		
-		double[] rt = new double[4];
+		double[] rt = new double[5];
 
 		personBg = 0;
 		locent = 0;
-		double pmlc = 0;
+		double pbg_lcen = 0;
+		double pbg_lcen_td = 0;
 		
 		double min_prob = Double.MAX_VALUE;
 		double measure_sum = 0;
@@ -651,13 +652,13 @@ public class MiningFramework {
 				locent += m;
 			}
 			if (combMethod == "min") {
-				pmlc = - Math.log10(min_prob) * locent;
+				pbg_lcen = - Math.log10(min_prob) * locent;
 			} else if (combMethod == "prod") {
 				for (double m : mw_pbg_le) {
-					pmlc += m;
+					pbg_lcen += m;
 				}
 			} else if (combMethod == "wsum") {
-				pmlc = alpha * personBg + beta * locent;
+				pbg_lcen = alpha * personBg + beta * locent;
 			}
 
 //			fout.write(String.format("%g\t%g\t%d\n", measure, locent, friend_flag));
@@ -669,7 +670,7 @@ public class MiningFramework {
 				personBg = mw_pbg.get(0);
 				locent = mw_le.get(0);
 //				pmlc = alpha * measure + beta * locent;
-				pmlc = mw_pbg_le.get(0);
+				pbg_lcen = mw_pbg_le.get(0);
 			} else if (meetingEvent.size() > 1) {
 				for (int i = 0; i < meetingEvent.size(); i++) {
 					double w = 0;
@@ -690,12 +691,20 @@ public class MiningFramework {
 					personBg += mw_pbg.get(i) * w;
 					locent += mw_le.get(i) * w;
 					avg_w += w;
-					if (combMethod == "min")
-						pmlc += - Math.log10(min_prob) * mw_le.get(i) * w;
-					else if (combMethod == "prod")
-						pmlc += mw_pbg_le.get(i) * w;
-					else if (combMethod == "wsum")
-						pmlc += (alpha * mw_pbg.get(i) + beta * mw_le.get(i)) * w;
+					if (combMethod == "min") {
+						double tmp = - Math.log10(min_prob) * mw_le.get(i);
+						pbg_lcen += tmp;
+						pbg_lcen_td += tmp * w;
+					}
+					else if (combMethod == "prod") {
+						pbg_lcen += mw_pbg_le.get(i);
+						pbg_lcen_td += mw_pbg_le.get(i) * w;
+					}
+					else if (combMethod == "wsum") {
+						double tmp = alpha * mw_pbg.get(i) + beta * mw_le.get(i);
+						pbg_lcen += tmp;
+						pbg_lcen_td += tmp * w;
+					}
 //					measure += w;
 				}
 				avg_w /= meetingEvent.size();
@@ -717,8 +726,9 @@ public class MiningFramework {
 		}
 		rt[0] = personBg;
 		rt[1] = freq;
-		rt[2] = pmlc;
+		rt[2] = pbg_lcen;
 		rt[3] = locent;
+		rt[4] = pbg_lcen_td;
 		
 		return rt;
 	}
@@ -903,8 +913,10 @@ public class MiningFramework {
 				int friflag = Integer.parseInt(ls[3]);
 				if (freq > 0) {
 //					dbm = distanceBasedSumLogMeasure(uaid, ubid);
+					// locidm contains: personal background, frequency, personal background + location entropy, 
+					// 					location entropy, personal bg + location entro + temporal dependency
 					locidm = PAIRWISEweightEvent(uaid, ubid, fout2, friflag, false, false,  "prod", "min", "min", 1, sampleRate);
-					fout.write(String.format("%d\t%d\t%g\t%g\t%g\t%d\t%d%n", uaid, ubid, locidm[2], locidm[3], locidm[0], (int) locidm[1], friflag));
+					fout.write(String.format("%d\t%d\t%g\t%g\t%g\t%d\t%g\t%d%n", uaid, ubid, locidm[2], locidm[3], locidm[0], (int) locidm[1], locidm[4], friflag));
 				}
 			}
 			
