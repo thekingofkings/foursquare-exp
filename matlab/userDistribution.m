@@ -1,5 +1,5 @@
-checkinsN = importdata('checkinsN-dist');
-friendsN = importdata('friendsN-dist');
+checkinsN = importdata('../res/checkinsN-dist');
+friendsN = importdata('../res/friendsN-dist');
 
 f1 = figure();
 hold on;
