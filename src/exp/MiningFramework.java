@@ -534,6 +534,7 @@ public class MiningFramework {
 	 * @return
 	 * @throws IOException 
 	 */
+	@SuppressWarnings("unused")
 	private static double[] PAIRWISEweightEvent(int uaid, int ubid, BufferedWriter fout, int friend_flag, boolean IDorDist, 
 			boolean entroIDorDist, String RhoMethod, String weightMethod, String combMethod, int dependence, int sampleRate
 			) throws IOException {
@@ -719,11 +720,8 @@ public class MiningFramework {
 						td += w;
 						pbg_lcen_td += tmp * w;
 					}
-//					measure += w;
 				}
 				avg_w = td / meetingEvent.size();
-//				pmlc = pmlc / (meetingEvent.size() - 1);
-//				pmlc = alpha * measure + beta * locent;
 			}
 			
 			fout.write(String.format("ID: %d %d; %g\t%d\t%d\n", uaid, ubid, avg_w, (int)freq, friend_flag));
