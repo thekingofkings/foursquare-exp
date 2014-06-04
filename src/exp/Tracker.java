@@ -2,7 +2,6 @@ package exp;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -528,20 +527,18 @@ public class Tracker {
 		int numUser = User.allUserSet.size();
 		Random r = new Random();
 		try {
-			File dir = new File(User.userDir);
-			String[] fileNames = dir.list();
-			User.allUserSet.clear();
+			HashMap<Integer, User> sampleSet = new HashMap<Integer, User>();
 			int c = 0;
-			for (String fid : fileNames) {
-				c++;
+			for (User u : User.allUserSet.values()) {
 				if (r.nextDouble() <= sampleRate / 100.0 ) {
-					int uid = Integer.parseInt(fid);
-					new User(uid);
-					if (User.allUserSet.size() == sampleRate / 100.0 * numUser)
+					c++;
+					sampleSet.put(u.userID, u);
+					if (sampleSet.size() == sampleRate / 100.0 * numUser)
 						break;
 				}
 			}
 			System.out.println(String.format("Total user %d\t%d", c, User.allUserSet.size()));
+			User.allUserSet = sampleSet;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -563,7 +560,11 @@ public class Tracker {
 				for (long loc : locationEntropy.keySet())
 					fout.write(String.format("%d\t%g\n", loc, locationEntropy.get(loc)));
 			} else {
-				fout = new BufferedWriter(new FileWriter(String.format("res/GPSEntropy-%ds.txt", sampleRate)));
+				if (sampleRate <= 100) {
+					fout = new BufferedWriter(new FileWriter(String.format("res/GPSEntropy-%ds.txt", sampleRate)));
+				} else {
+					fout = new BufferedWriter(new FileWriter("res/GPSEntropy.txt"));
+				}
 				for (String gps : GPSEntropy.keySet())
 					fout.write(String.format("%s\t%g\n", gps, GPSEntropy.get(gps)));
 			}
@@ -626,7 +627,14 @@ public class Tracker {
 	public static HashMap<String, Double> readLocationEntropyGPSbased( int sampleRate ) {
 		if (GPSEntropy.isEmpty()) {
 			try {
-				BufferedReader fin = new BufferedReader( new FileReader(String.format("res/GPSEntropy-%ds.txt", sampleRate)));
+				BufferedReader fin;
+				if (sampleRate >= 100) {
+					fin = new BufferedReader( new FileReader(String.format("res/GPSEntropy-%ds.txt", sampleRate)));
+					System.out.println(String.format("File res/GPSEntropy-%ds.txt found!", sampleRate));
+				} else {
+					fin = new BufferedReader( new FileReader("res/GPSEntropy.txt"));
+					System.out.println("File res/GPSEntropy-%ds.txt found!");
+				}
 				String l = null;
 				while ( (l=fin.readLine()) != null) {
 					String[] ls = l.split("\\s+");

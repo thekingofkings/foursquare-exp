@@ -97,8 +97,10 @@ public class MiningFramework {
 	/**
 	 * Calculate the meeting frequency of each user pair
 	 * For the non-friends pair, we will focus on their meeting frequency
+	 * 
+	 * @param IDorDist -- true use ID / false use distance
 	 */
-	public void allPairMeetingFreq() {
+	public void allPairMeetingFreq(boolean IDorDist) {
 		long t_start = System.currentTimeMillis();
 		System.out.println("allPairMeetingFreq starts");
 		int K = User.allUserSet.size();
@@ -127,7 +129,15 @@ public class MiningFramework {
 							aind++;
 							continue;
 						} else {
-							if (ra.locID == rb.locID ) {
+							// judge the meeting event by different criteria
+							boolean isMeeting = false;
+							if (IDorDist) {
+								isMeeting = (ra.locID == rb.locID);
+							} else {
+								isMeeting = (ra.distanceTo(rb) < MiningFramework.distance_threshold);
+							}
+							
+							if (isMeeting ) {
 								int first = (i <= j) ? i : j;
 								int second = (i > j) ? i : j;
 								if (meetFreq.containsKey(first)) {
@@ -614,12 +624,13 @@ public class MiningFramework {
 		}
 		
 		
-		double[] rt = new double[5];
+		double[] rt = new double[6];
 
 		personBg = 0;
 		locent = 0;
 		double pbg_lcen = 0;
 		double pbg_lcen_td = 0;
+		double td = 0; // temporal dependency
 		
 		double min_prob = Double.MAX_VALUE;
 		double measure_sum = 0;
@@ -669,8 +680,9 @@ public class MiningFramework {
 			if (meetingEvent.size() == 1) {
 				personBg = mw_pbg.get(0);
 				locent = mw_le.get(0);
-//				pmlc = alpha * measure + beta * locent;
 				pbg_lcen = mw_pbg_le.get(0);
+				pbg_lcen_td = pbg_lcen;
+				td = 1;
 			} else if (meetingEvent.size() > 1) {
 				for (int i = 0; i < meetingEvent.size(); i++) {
 					double w = 0;
@@ -690,24 +702,26 @@ public class MiningFramework {
 					w /= (meetingEvent.size() - 1);
 					personBg += mw_pbg.get(i) * w;
 					locent += mw_le.get(i) * w;
-					avg_w += w;
 					if (combMethod == "min") {
 						double tmp = - Math.log10(min_prob) * mw_le.get(i);
 						pbg_lcen += tmp;
+						td += w;
 						pbg_lcen_td += tmp * w;
 					}
 					else if (combMethod == "prod") {
 						pbg_lcen += mw_pbg_le.get(i);
+						td += w;
 						pbg_lcen_td += mw_pbg_le.get(i) * w;
 					}
 					else if (combMethod == "wsum") {
 						double tmp = alpha * mw_pbg.get(i) + beta * mw_le.get(i);
 						pbg_lcen += tmp;
+						td += w;
 						pbg_lcen_td += tmp * w;
 					}
 //					measure += w;
 				}
-				avg_w /= meetingEvent.size();
+				avg_w = td / meetingEvent.size();
 //				pmlc = pmlc / (meetingEvent.size() - 1);
 //				pmlc = alpha * measure + beta * locent;
 			}
@@ -729,6 +743,7 @@ public class MiningFramework {
 		rt[2] = pbg_lcen;
 		rt[3] = locent;
 		rt[4] = pbg_lcen_td;
+		rt[5] = td;
 		
 		return rt;
 	}
@@ -896,11 +911,14 @@ public class MiningFramework {
 		System.out.println("==========================================\nStart writeOutDifferentMeasures");
 		long t_start = System.currentTimeMillis();
 		
+		User.addAllUser();
+		long t_mid = System.currentTimeMillis();
+		System.out.println(String.format("Add all users finished in %d seconds", (t_mid - t_start) / 1000));
+		
 		try {
 			BufferedReader fin = new BufferedReader(new FileReader("res/freq.txt"));
 			BufferedWriter fout = new BufferedWriter(new FileWriter(String.format("res/distance-c%g-%ds.txt", event_time_exp_para_c, sampleRate)));
 			String l = null;
-			double[] dbm = {0, 0};
 			double[] locidm = null;
 			
 			BufferedWriter fout2 = new BufferedWriter(new FileWriter("res/Pair-glob-measure.txt"));
@@ -914,9 +932,9 @@ public class MiningFramework {
 				if (freq > 0) {
 //					dbm = distanceBasedSumLogMeasure(uaid, ubid);
 					// locidm contains: personal background, frequency, personal background + location entropy, 
-					// 					location entropy, personal bg + location entro + temporal dependency
+					// 					location entropy, personal bg + location entro + temporal dependency, temporal dependency
 					locidm = PAIRWISEweightEvent(uaid, ubid, fout2, friflag, false, false,  "prod", "min", "min", 1, sampleRate);
-					fout.write(String.format("%d\t%d\t%g\t%g\t%g\t%d\t%g\t%d%n", uaid, ubid, locidm[2], locidm[3], locidm[0], (int) locidm[1], locidm[4], friflag));
+					fout.write(String.format("%d\t%d\t%g\t%g\t%g\t%d\t%g\t%g\t%d%n", uaid, ubid, locidm[2], locidm[3], locidm[0], (int) locidm[1], locidm[4], locidm[5], friflag));
 				}
 			}
 			
@@ -1007,7 +1025,7 @@ public class MiningFramework {
 	public static void main(String argv[]) {
 		MiningFramework cf = new MiningFramework();
 //		cf.locationDistancePowerLaw();
-		cf.allPairMeetingFreq();
+		cf.allPairMeetingFreq(false);
 		cf.writeMeetingFreq();
 		
 //		cf.remoteFriends();
@@ -1044,6 +1062,7 @@ public class MiningFramework {
 //		}
 		
 //		for (int i = 1; i < 11; i++ )
+		
 		MiningFramework.event_time_exp_para_c = 0.2;
 		writeOutDifferentMeasures(User.para_c, 101);
 		

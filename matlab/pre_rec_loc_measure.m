@@ -22,7 +22,8 @@ for condition = 1:5;
     pbg = dml5(:,5);
     freq = dml5(:,6);
     pbg_locen_td = dml5(:,7);
-    friLabel = dml5(:,8);
+    td = dml5(:,8);
+    friLabel = dml5(:,9);
 
 
     % Use the prec-recal function from Internet.
@@ -38,6 +39,7 @@ for condition = 1:5;
     precisionRecallPlot( freq, friLabel, 'linestyle', '-', 'color', [0, 0, 0.8] );
     precisionRecallPlot( pbg, friLabel, 'r--' );
     precisionRecallPlot( locentro, friLabel, 'linestyle', '--', 'color', [0, 0.75, 0] );
+    precisionRecallPlot( td, friLabel, 'linestyle', '--', 'color', [255, 215, 0] / 255 );
     precisionRecallPlot( pbg_locen, friLabel, 'linestyle', '-', 'color', [0.3, 0.6, 0.9] );
     precisionRecallPlot( pbg_locen_td, friLabel, 'linestyle', '-.', 'color', [0.5, 0.4, 0.9] );
 
@@ -51,11 +53,11 @@ for condition = 1:5;
     xlabel('Recall', 'fontsize', 20);
     ylabel('Precision', 'fontsize', 20);
     set(gca, 'linewidth', 2, 'fontsize', 18);
-    legend({'Frequency', 'Personal', 'Global', 'Per+Glo', 'Per+Glo+Tem'}, 'location', 'southwest');
+    legend({'Frequency', 'Personal', 'Global', 'Temp Depen', 'Per+Glo', 'Per+Glo+Tem'}, 'location', 'southwest');
     %    'Location ID measure', 'Location ID frequency'}, 'fontsize', 16);
     set(gcf, 'PaperUnits', 'inches');
-    print(['pr-', num2str(condition), 'c1000u.eps'], '-dpsc');
-    system(['epstopdf pr-', num2str(condition), 'c1000u.eps']);
+    print(['pr-fs', num2str(condition), '.eps'], '-dpsc');
+    system(['epstopdf pr-fs', num2str(condition), '.eps']);
 %     saveas(gcf, ['dist-wsum-d30-u5000fgt',num2str(condition),'.png']);
 %     saveas(gcf, ['freq-wfbu5000fgt',num2str(condition),'.fig']);
 end
