@@ -643,15 +643,21 @@ public class MiningFramework {
 			if ( min_prob > m )
 				min_prob = m;
 		
+		// calculate the personal background
+		if (weightMethod == "min") {
+			personBg =  - Math.log10(min_prob) * probs.size();
+		} else if (weightMethod == "sum") {
+			for (double m : mw_pbg)
+				personBg += m;
+		}
+
+		// calculate the location entropy
+		for (double m : mw_le) {
+			locent += m;
+		}
+		
 		if (dependence == 0)
-		{			
-			if (weightMethod == "min") {
-				personBg =  - Math.log10(min_prob) * probs.size();
-			} else if (weightMethod == "sum") {
-				for (double m : mw_pbg)
-					personBg += m;
-			}
-			
+		{
 			/** average measure **/
 			for (double m : entros)
 				avg_entro += m;
@@ -660,9 +666,6 @@ public class MiningFramework {
 				measure_sum += m;
 			}
 			avg_pbg = measure_sum / mw_pbg.size();
-			for (double m : mw_le) {
-				locent += m;
-			}
 			if (combMethod == "min") {
 				pbg_lcen = - Math.log10(min_prob) * locent;
 			} else if (combMethod == "prod") {
@@ -679,8 +682,6 @@ public class MiningFramework {
 		} else {
 			double avg_w = 0;
 			if (meetingEvent.size() == 1) {
-				personBg = mw_pbg.get(0);
-				locent = mw_le.get(0);
 				pbg_lcen = mw_pbg_le.get(0);
 				pbg_lcen_td = pbg_lcen;
 				td = 1;
@@ -701,8 +702,6 @@ public class MiningFramework {
 						}
 					}
 					w /= (meetingEvent.size() - 1);
-					personBg += mw_pbg.get(i) * w;
-					locent += mw_le.get(i) * w;
 					if (combMethod == "min") {
 						double tmp = - Math.log10(min_prob) * mw_le.get(i);
 						pbg_lcen += tmp;
@@ -1021,10 +1020,10 @@ public class MiningFramework {
 	
 	
 	public static void main(String argv[]) {
-		MiningFramework cf = new MiningFramework();
+//		MiningFramework cf = new MiningFramework();
 //		cf.locationDistancePowerLaw();
-		cf.allPairMeetingFreq(false);
-		cf.writeMeetingFreq();
+//		cf.allPairMeetingFreq(false);
+//		cf.writeMeetingFreq();
 		
 //		cf.remoteFriends();
 //		cf.writeRemoteFriend();

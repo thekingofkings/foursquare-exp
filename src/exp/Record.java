@@ -78,7 +78,7 @@ public class Record implements Comparable<Record> {
 	
 	
 	public String GPS() {
-		return String.format("%.6f%.6f", latitude, longitude);
+		return String.format("%.3f%.3f", latitude, longitude);
 	}
 	
 

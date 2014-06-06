@@ -626,15 +626,16 @@ public class Tracker {
 	
 	public static HashMap<String, Double> readLocationEntropyGPSbased( int sampleRate ) {
 		if (GPSEntropy.isEmpty()) {
+			String fname = null;
 			try {
 				BufferedReader fin;
-				if (sampleRate >= 100) {
-					fin = new BufferedReader( new FileReader(String.format("res/GPSEntropy-%ds.txt", sampleRate)));
-					System.out.println(String.format("File res/GPSEntropy-%ds.txt found!", sampleRate));
+				if (sampleRate <= 100) {
+					fname = String.format("res/GPSEntropy-%ds.txt", sampleRate);
 				} else {
-					fin = new BufferedReader( new FileReader("res/GPSEntropy.txt"));
-					System.out.println("File res/GPSEntropy-%ds.txt found!");
+					fname = "res/GPSEntropy.txt";
 				}
+				fin = new BufferedReader( new FileReader(fname));
+				System.out.println(String.format("File %s found!", fname));
 				String l = null;
 				while ( (l=fin.readLine()) != null) {
 					String[] ls = l.split("\\s+");
@@ -645,8 +646,8 @@ public class Tracker {
 				}
 				fin.close();
 			} catch (FileNotFoundException e) {
-				System.out.println("No GPS entropy file found. Generate a new one ...");
-				writeLocationEntropy(false);
+				System.out.println(String.format("No GPS entropy file %s found. Generate a new one ...", fname));
+				writeLocationEntropy(false, sampleRate);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

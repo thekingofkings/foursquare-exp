@@ -12,7 +12,7 @@ import java.util.LinkedList;
 public class User {
 	static HashMap<Integer, User> allUserSet = new HashMap<Integer, User>();
 	static String userDir = "../../dataset/foursquare/sorted/";
-	static double para_c = 1.5;
+	static double para_c = 2;
 	
 	
 	int userID;
