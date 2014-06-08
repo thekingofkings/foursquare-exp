@@ -112,7 +112,7 @@ public class DataPreProcessor {
 	
 	public void userDistribution() {
 		try {
-			BufferedWriter fout = new BufferedWriter(new FileWriter("res/checkinsN-dist"));
+			BufferedWriter fout = new BufferedWriter(new FileWriter("res/checkinsN-dist.txt"));
 			for (int uid : users.keySet())
 				fout.write(Integer.toString(users.get(uid).size()) + "\n");
 			fout.close();

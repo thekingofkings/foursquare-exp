@@ -48,7 +48,7 @@ public class Tracker {
 	 * 		user_a_id, user_b_id, colocation_size
 	 */
 	static ArrayList<int[]> FrequentPair = new ArrayList<int[]>();
-	static ArrayList<HashSet<Long>> FrequentPair_CoLocations = new ArrayList<HashSet<Long>>();
+	static ArrayList<HashSet<String>> FrequentPair_CoLocations = new ArrayList<HashSet<String>>();
 	static HashMap<Long, Double> locationEntropy = new HashMap<Long, Double>();
 	static HashMap<String, Double> GPSEntropy = new HashMap<String, Double>();
 
@@ -102,10 +102,10 @@ public class Tracker {
 					} else {
 						User uj = users.get(j);
 						
-						HashSet<Long> ui_loc = ui.getLocations();
-						HashSet<Long> uj_loc = uj.getLocations();
+						HashSet<String> ui_loc = ui.getLocations();
+						HashSet<String> uj_loc = uj.getLocations();
 						// get intersection of two sets
-						HashSet<Long> colocations = new HashSet<Long>(ui_loc);
+						HashSet<String> colocations = new HashSet<String>(ui_loc);
 						colocations.retainAll(uj_loc);
 						numOfColocations.add(colocations.size());
 						
@@ -164,11 +164,11 @@ public class Tracker {
 					if (ubid > ua.userID) {
 						User ub = User.allUserSet.get(ubid);
 						// get intersection of two sets
-						HashSet<Long> ua_loc = ua.getLocations();
-						HashSet<Long> ub_loc = ub.getLocations();
+						HashSet<String> ua_loc = ua.getLocations();
+						HashSet<String> ub_loc = ub.getLocations();
 						ua_loc.retainAll(ub_loc);
 						
-						for (long loc : ua_loc)
+						for (String loc : ua_loc)
 							fout.write(loc + "\t");
 						fout.write("\n");
 					}
@@ -324,10 +324,10 @@ public class Tracker {
 						c2 ++;
 						l2 = fin2.readLine();
 						if (c2 == c1) {
-							HashSet<Long> colocs = new HashSet<Long>();
+							HashSet<String> colocs = new HashSet<String>();
 							String[] ls2 = l2.split("\\s+");
 							for (String s : ls2)
-								colocs.add(Long.parseLong(s));
+								colocs.add(s);
 							FrequentPair_CoLocations.add(colocs);
 						}
 					}
@@ -887,7 +887,7 @@ public class Tracker {
 		for (int i = 0; i < FrequentPair.size(); i++ ) {
 			int uaid = FrequentPair.get(i)[0];
 			int ubid = FrequentPair.get(i)[1];
-			HashSet<Long> colocs = FrequentPair_CoLocations.get(i);
+			HashSet<String> colocs = FrequentPair_CoLocations.get(i);
 			// 1. calculate the colocating interestness
 			double Finterest = coLocationScore(uaid, ubid, colocs);
 			interestingness.add(Finterest);
@@ -903,31 +903,31 @@ public class Tracker {
 	/**
 	 * calculate the co-location score directly
 	 */
-	private static double coLocationScore( int user_a_id, int user_b_id, HashSet<Long> colocs ) {
+	private static double coLocationScore( int user_a_id, int user_b_id, HashSet<String> colocs ) {
 		LinkedList<Record> ra = User.allUserSet.get(user_a_id).records;
-		HashMap<Long, LinkedList<Record>> raco = new HashMap<Long, LinkedList<Record>>();
+		HashMap<String, LinkedList<Record>> raco = new HashMap<String, LinkedList<Record>>();
 		LinkedList<Record> rb = User.allUserSet.get(user_b_id).records;
-		HashMap<Long, LinkedList<Record>> rbco = new HashMap<Long, LinkedList<Record>>();
+		HashMap<String, LinkedList<Record>> rbco = new HashMap<String, LinkedList<Record>>();
 		double interest = 0;
 		// System.out.println(String.format("Colocs size %d", colocs.size()));
 		// find the reverse map of location count
 		for (Record r : ra) {
-			if (raco.containsKey(r.locID)) {
-				raco.get(r.locID).add(r);
+			if (raco.containsKey(r.GPS())) {
+				raco.get(r.GPS()).add(r);
 			} else {
-				raco.put(r.locID, new LinkedList<Record>());
-				raco.get(r.locID).add(r);
+				raco.put(r.GPS(), new LinkedList<Record>());
+				raco.get(r.GPS()).add(r);
 			}
 		}
 		for (Record r : rb) {
-			if (rbco.containsKey(r.locID)) {
-				rbco.get(r.locID).add(r);
+			if (rbco.containsKey(r.GPS())) {
+				rbco.get(r.GPS()).add(r);
 			} else {
-				rbco.put(r.locID, new LinkedList<Record>());
-				rbco.get(r.locID).add(r);
+				rbco.put(r.GPS(), new LinkedList<Record>());
+				rbco.get(r.GPS()).add(r);
 			}
 		}
-		for (Long loc_id : colocs) {
+		for (String loc_id : colocs) {
 			// judge their co-locating events with time
 			for (Record r1 : raco.get(loc_id)) {
 				for (Record r2 : rbco.get(loc_id)) {
@@ -964,7 +964,7 @@ public class Tracker {
 			// get two user
 			User a = User.allUserSet.get(FrequentPair.get(i)[0]);
 			User b = User.allUserSet.get(FrequentPair.get(i)[1]);
-			HashSet<Long> locs = FrequentPair_CoLocations.get(i);
+			HashSet<String> locs = FrequentPair_CoLocations.get(i);
 			// 1. calculate the marginal entropy of U_a over co-locations
 			double entroA = 0;
 			if (entro.containsKey(a.userID)) {
@@ -999,7 +999,7 @@ public class Tracker {
 	 * 
 	 * -- calculate the marginal entropy of one user over the given location set
 	 */
-	private static double marginalEntropy(int uid, HashSet<Long> locs) {
+	private static double marginalEntropy(int uid, HashSet<String> locs) {
 		User u = User.allUserSet.get(uid);
 		HashMap<Long, Integer> locFreq = new HashMap<Long, Integer>();
 		// 1. count frequency on each locations in location set
@@ -1032,7 +1032,7 @@ public class Tracker {
 	 * 
 	 * -- calculate the joint entropy of two users over the given location set
 	 */
-	private static double jointEntropy( int uaid, int ubid, HashSet<Long> locs ) {
+	private static double jointEntropy( int uaid, int ubid, HashSet<String> locs ) {
 		User a = User.allUserSet.get(uaid);
 		User b = User.allUserSet.get(ubid);
 		HashMap<Long, HashMap<Long, Integer>> locFreq = new HashMap<Long, HashMap<Long, Integer>>();
@@ -1087,7 +1087,7 @@ public class Tracker {
 		for (int i = 0; i < FrequentPair.size(); i++) {
 			int[] p = FrequentPair.get(i);
 			// get given target locatoin set
-			HashSet<Long> locs = FrequentPair_CoLocations.get(i);
+			HashSet<String> locs = FrequentPair_CoLocations.get(i);
 			for (int j = 0; j < 2; j++ ) {
 				int uid = p[j];
 				int cnt = 0;
@@ -1120,7 +1120,7 @@ public class Tracker {
 			HashMap<Long, HashMap<Long, Double>> pairLocProb = new HashMap<>();
 			int uaid = FrequentPair.get(i)[0];
 			int ubid = FrequentPair.get(i)[1];
-			HashSet<Long> locs = FrequentPair_CoLocations.get(i);
+			HashSet<String> locs = FrequentPair_CoLocations.get(i);
 			int totalCase = 0;
 			for (Record ar : User.allUserSet.get(uaid).records) {
 				for (Record br : User.allUserSet.get(ubid).records) {
@@ -1174,7 +1174,7 @@ public class Tracker {
 		for (int i = 0; i < FrequentPair.size(); i++) {
 			int[] p = FrequentPair.get(i);
 			// get given target locatoin set
-			HashSet<Long> locs = FrequentPair_CoLocations.get(i);
+			HashSet<String> locs = FrequentPair_CoLocations.get(i);
 			for (int j = 0; j < 2; j++ ) {
 				int uid = p[j];
 				int cnt = 0;
@@ -1207,7 +1207,7 @@ public class Tracker {
 			HashMap<Long, Double> pairLocProb = new HashMap<>();
 			int uaid = FrequentPair.get(i)[0];
 			int ubid = FrequentPair.get(i)[1];
-			HashSet<Long> locs = FrequentPair_CoLocations.get(i);
+			HashSet<String> locs = FrequentPair_CoLocations.get(i);
 			int totalCase = 0;
 			for (Record ar : User.allUserSet.get(uaid).records) {
 				for (Record br : User.allUserSet.get(ubid).records) {
@@ -1247,7 +1247,7 @@ public class Tracker {
 		for (int i = 0; i < FrequentPair.size(); i++) {
 			int uaid = FrequentPair.get(i)[0];
 			int ubid = FrequentPair.get(i)[1];
-			HashSet<Long> locs = FrequentPair_CoLocations.get(i);
+			HashSet<String> locs = FrequentPair_CoLocations.get(i);
 			double entroA = marginalEntropy(uaid, locs);
 			double entroB = marginalEntropy(ubid, locs);
 			System.out.println(String.format("entro A %g, B %g", entroA, entroB));

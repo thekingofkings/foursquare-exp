@@ -1,24 +1,28 @@
 package exp;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 
 
 
-public class User {
+public class User implements Comparable<User> {
 	static HashMap<Integer, User> allUserSet = new HashMap<Integer, User>();
 	static String userDir = "../../dataset/foursquare/sorted/";
-	static double para_c = 2;
+	static double para_c = 20;
 	
 	
 	int userID;
 	LinkedList<Record> records;
 	HashSet<Integer> friends;
-	HashSet<Long> locs;
+	HashSet<String> locs;
 	
 	/*
 	 * Construct the allUserSet (static field) in User class
@@ -27,7 +31,7 @@ public class User {
 		userID = r.userID;
 		records = new LinkedList<Record>();
 		friends = new HashSet<Integer>();
-		locs = new HashSet<Long>();
+		locs = new HashSet<String>();
 		
 		records.add(r);
 		if ( ! allUserSet.containsKey(r.userID))
@@ -43,7 +47,7 @@ public class User {
 			userID = uid;
 			records = new LinkedList<Record>();
 			friends = new HashSet<Integer>();
-			locs = new HashSet<Long>();
+			locs = new HashSet<String>();
 			
 			try {
 				BufferedReader fin = new BufferedReader(new FileReader(String.format("%s/%d", userDir, uid)));
@@ -86,17 +90,38 @@ public class User {
 		System.out.println(String.format("Create %d users in total.", allUserSet.size()));
 	}
 	
+	
+	public static void addTopkUser( int k ) {
+		try {
+			BufferedReader fin = new BufferedReader( new FileReader("res/userCheckins-rank.txt"));
+			String l = null;
+			int c = 0;
+			while (( l = fin.readLine()) != null ) {
+				String[] ls = l.split("\t");
+				int uid = Integer.parseInt(ls[0]);
+				new User(uid);
+				c ++;
+				if (c==k)
+					break;
+			}
+			fin.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		System.out.println(String.format("%d users have been initailized.", k));
+	}
+	
 	@Override
 	public String toString() {
 		return String.format("User %d: #friend -- %d; #records -- %d", userID, friends.size(), records.size());
 	}
 	
 	
-	HashSet<Long> getLocations() {
+	HashSet<String> getLocations() {
 		if (locs.size() == 0) {
 			for (Record r : records) {
-				if ( ! locs.contains(r.locID) )
-					locs.add( r.locID );
+				if ( ! locs.contains(r.GPS()) )
+					locs.add( r.GPS() );
 			}
 		}
 		return locs;
@@ -128,12 +153,36 @@ public class User {
 	
 	
 	public static void main(String[] args) {
-		for (int i = 0; i <= 335; i++) {
-			User u0 = new User(i);	
-			System.out.println(u0.getLocations().size());
-		}
-		//User.addAllUser();
+//		for (int i = 0; i <= 335; i++) {
+//			User u0 = new User(i);	
+//			System.out.println(u0.getLocations().size());
+//		}
+//		User.addAllUser();
+		getUserRecordsNRanking();
 	}
 
+
+	@Override
+	public int compareTo(User oth) {
+		return this.records.size() - oth.records.size();
+	}
+
+	private static void getUserRecordsNRanking() {
+		User.addAllUser();
+		List<User> users = new LinkedList<User>(User.allUserSet.values());
+		Collections.sort(users);
+		
+		try {
+			BufferedWriter fout = new BufferedWriter( new FileWriter( "res/userCheckins-rank.txt" ));
+			for (int i = users.size() - 1; i >= 0; i--) {
+				User u = users.get(i);
+				u.getLocations();
+				fout.write(String.format("%d\t%d\t%d%n", u.userID, u.records.size(), u.locs.size()));
+			}
+			fout.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 }

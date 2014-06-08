@@ -17,8 +17,9 @@ import java.util.TreeMap;
 public class MiningFramework {
 	public static double distance_threshold = 0.03;	 // in km 
 
-	static double event_time_exp_para_c = 0.5;	// 0.5 is better than 1, when pairwise
+	static double event_time_exp_para_c = 0.2;	// 0.5 is better than 1, when pairwise
 	static double event_space_exp_para_c = 1.5;	// bad choice 0.1, 10, 1.5
+	static double entropy_exp_para = 0.5;
 	static double alpha = 0.0011284;
 	static double beta = 0.046567;
 	
@@ -107,11 +108,11 @@ public class MiningFramework {
 		System.out.println(String.format("uary.length: %d", K));
 		for (int i = 0; i < K; i++) {
 			User ua = User.allUserSet.get(i);
-			HashSet<Long> ua_locs = ua.getLocations();
+			HashSet<String> ua_locs = ua.getLocations();
 			for (int j = i+1; j < K; j++) {
 				User ub = User.allUserSet.get(j);
-				HashSet<Long> ub_locs = ub.getLocations();
-				HashSet<Long> diff = new HashSet<Long>(ub_locs);
+				HashSet<String> ub_locs = ub.getLocations();
+				HashSet<String> diff = new HashSet<String>(ub_locs);
 				diff.retainAll(ua_locs);
 				if (diff.size() > 0) {
 					// iterate through their records to find co-location event.
@@ -326,7 +327,7 @@ public class MiningFramework {
 		User ua = new User(uaid);
 		User ub = new User(ubid);
 		// 1. get the co-locations and the corresponding meeting freq
-		HashMap<Long, Integer> mf = meetingFreq(ua, ub);
+		HashMap<String, Integer> mf = meetingFreq(ua, ub);
 		// 2. get the total meeting frequency
 		int sum = 0;
 		for (int i : mf.values()) {
@@ -334,8 +335,8 @@ public class MiningFramework {
 		}
 		System.out.println(String.format("Total Meet %d times between user %d and %d.", sum, uaid, ubid));
 		// 3. get the location distribution of two users
-		TreeMap<Long, Integer> loca = locationDistribution(ua);
-		TreeMap<Long, Integer> locb = locationDistribution(ub);
+		TreeMap<String, Integer> loca = locationDistribution(ua);
+		TreeMap<String, Integer> locb = locationDistribution(ub);
 		// 4. get the ranking
 		LinkedList<Integer> freqa = new LinkedList<Integer>(loca.values());
 		Collections.sort(freqa);
@@ -344,12 +345,12 @@ public class MiningFramework {
 		Collections.sort(freqb);
 		Collections.reverse(freqb);
 		System.out.println("loc \t meeting frequency \t rank of A \t frequency of A \t rank of B \t frequency of B");
-		for (Long l : mf.keySet()) {
+		for (String l : mf.keySet()) {
 			int fa = loca.get(l);
 			int ranka = freqa.indexOf(fa) + 1;
 			int fb = locb.get(l);
 			int rankb = freqb.indexOf(fb) + 1;
-			System.out.println(String.format("%d \t\t %d \t\t %d \t\t %d \t\t %d \t\t %d", l, mf.get(l), ranka, fa, rankb, fb));
+			System.out.println(String.format("%s \t\t %d \t\t %d \t\t %d \t\t %d \t\t %d", l, mf.get(l), ranka, fa, rankb, fb));
 		}
 		
 	}
@@ -360,13 +361,12 @@ public class MiningFramework {
 	 * The meeting event is based on location ID
 	 * @param ua	user a
 	 * @param ub	user b
-	 * @return		a map with location ID as keys and meeting frequency at that location as values
+	 * @return		a map with location ID (coordinate string) as keys and meeting frequency at that location as values
 	 */
-	private static HashMap<Long, Integer> meetingFreq( User ua, User ub ) {
-		HashMap<Long, Integer> colofreq = new HashMap<Long, Integer>();
+	private static HashMap<String, Integer> meetingFreq( User ua, User ub ) {
+		HashMap<String, Integer> colofreq = new HashMap<String, Integer>();
 		int aind = 0;
 		int bind = 0;
-		long lastMeet = 0;
 		while (aind < ua.records.size() && bind < ub.records.size()) {
 			Record ra = ua.records.get(aind);
 			Record rb = ub.records.get(bind);
@@ -378,14 +378,13 @@ public class MiningFramework {
 				aind ++;
 				continue;
 			} else {
-				if (ra.locID == rb.locID && ra.timestamp - lastMeet >= 3600) {
-					if (colofreq.containsKey(ra.locID)) {
-						int tmp = colofreq.get(ra.locID);
-						colofreq.put(ra.locID, tmp + 1);
+				if (ra.distanceTo(rb) < distance_threshold) {
+					if (colofreq.containsKey(ra.GPS())) {
+						int tmp = colofreq.get(ra.GPS());
+						colofreq.put(ra.GPS(), tmp + 1);
 					} else {
-						colofreq.put(ra.locID, 1);
+						colofreq.put(ra.GPS(), 1);
 					}
-					lastMeet = ra.timestamp;
 				}
 				aind ++;
 				bind ++;
@@ -405,7 +404,7 @@ public class MiningFramework {
 	private static int totalMeetingFreq( int uaid, int ubid ) {
 		User ua = new User(uaid);
 		User ub = new User(ubid);
-		HashMap<Long, Integer> mf = meetingFreq(ua, ub);
+		HashMap<String, Integer> mf = meetingFreq(ua, ub);
 		int sum = 0;
 		for (int f : mf.values()) {
 			sum += f;
@@ -610,7 +609,7 @@ public class MiningFramework {
 							entro = 0;
 					}
 					entros.add(entro);
-					locent = Math.exp( - entro );
+					locent = Math.exp( - entropy_exp_para * entro );
 					mw_le.add(locent);
 					
 					/** different method to calculate the product of two **/
@@ -645,7 +644,8 @@ public class MiningFramework {
 		
 		// calculate the personal background
 		if (weightMethod == "min") {
-			personBg =  - Math.log10(min_prob) * probs.size();
+			personBg =  - Math.log10(min_prob) * meetingEvent.size();
+			System.out.println(String.format("Sum of %d events by max %g is %g.", meetingEvent.size(), min_prob, personBg));
 		} else if (weightMethod == "sum") {
 			for (double m : mw_pbg)
 				personBg += m;
@@ -848,14 +848,15 @@ public class MiningFramework {
 		
 		// aggregate the measure
 		// location entropy
-		HashMap<Long, Double> locationEntropy = Tracker.readLocationEntropyIDbased(5000);
+		HashMap<String, Double> locationEntropy = Tracker.readLocationEntropyGPSbased(101);
 		double M = Double.MAX_VALUE;
 		double entro = 0;
 		for (double[] a : coloEnt) {
 			if ( M > a[0] * a[1]) 
 				M = a[0] * a[1];
 //			System.out.println(locationEntropy.get((long) a[4]));
-			entro += Math.exp(- locationEntropy.get((long) a[4]));
+			a[4] = Math.exp( - entropy_exp_para * locationEntropy.get(String.format("%.3f%.3f", a[2], a[3])));
+			entro += a[4];
 		}
 		double minMeasure = - Math.log10(M) * coloEnt.size();
 		
@@ -869,7 +870,7 @@ public class MiningFramework {
 				b = coloEnt.get(j);
 				if (i != j) {
 					double deltaT = Math.abs( b[7] - a[7] ) / 3600 / 24;
-					w += 1 - Math.exp(- 0.3 * deltaT);
+					w += 1 - Math.exp(- event_time_exp_para_c * deltaT);
 //					System.out.println(String.format("%g\t%g\t%g", w, 1-Math.exp(-1.5* deltaT) , deltaT));
 				}
 			}
@@ -881,12 +882,12 @@ public class MiningFramework {
 
 		// print out the probability
 		if (printFlag) {
-			System.out.println(String.format("User %d and %d meet %d times.\nA.weight\t\tB.weight\t\tA.lati\t\tA.longi\t\tA.locID\t\tB.lati\t\tB.longi", 
+			System.out.println(String.format("User %d and %d meet %d times.\nA.weight\tB.weight\tA.lati\tA.longi\tA.loc entropy\tB.lati\t\tB.longi", 
 					ua.userID, ub.userID, coloEnt.size()));
 			for (double[] a : coloEnt) {
 				cal1.setTimeInMillis((long) a[7] * 1000);
 				cal2.setTimeInMillis((long) a[8] * 1000);
-				System.out.println(String.format("%g\t\t%g\t\t%g\t\t%g\t\t%g\t\t%g\t\t%g\t\t%8$tF %8$tT\t\t%9$tF %9$tT", a[0], a[1], a[2], 
+				System.out.println(String.format("%g\t%g\t%g\t%g\t%g\t%g\t\t%g\t\t%8$tF %8$tT\t\t%9$tF %9$tT", a[0], a[1], a[2], 
 						a[3], a[4], a[5], a[6], cal1, cal2));
 			}
 			System.out.println(String.format("User pair %d and %d has min personal measure %g, global measure %g, temporal dependence measure %g", uaid, ubid, minMeasure, entro, minTC));
@@ -909,6 +910,7 @@ public class MiningFramework {
 		long t_start = System.currentTimeMillis();
 		
 		User.addAllUser();
+//		User.addTopkUser(2800);
 		long t_mid = System.currentTimeMillis();
 		System.out.println(String.format("Add all users finished in %d seconds", (t_mid - t_start) / 1000));
 		
@@ -926,8 +928,8 @@ public class MiningFramework {
 				int ubid = Integer.parseInt(ls[1]);
 				int freq = Integer.parseInt(ls[2]);
 				int friflag = Integer.parseInt(ls[3]);
+//				if (User.allUserSet.containsKey(uaid) && User.allUserSet.containsKey(ubid) && freq > 0) {
 				if (freq > 0) {
-//					dbm = distanceBasedSumLogMeasure(uaid, ubid);
 					// locidm contains: personal background, frequency, personal background + location entropy, 
 					// 					location entropy, personal bg + location entro + temporal dependency, temporal dependency
 					locidm = PAIRWISEweightEvent(uaid, ubid, fout2, friflag, false, false,  "prod", "min", "min", 1, sampleRate);
@@ -958,7 +960,6 @@ public class MiningFramework {
 		ArrayList<double[]> coloEnt = new ArrayList<double[]>();
 		int aind = 0;
 		int bind = 0;
-		double time_lastMeet = 0;
 		while (aind < ua.records.size() && bind < ub.records.size()) {
 			Record ra = ua.records.get(aind);
 			Record rb = ub.records.get(bind);
@@ -970,12 +971,11 @@ public class MiningFramework {
 				aind ++;
 				continue;
 			} else {
-				if (ra.distanceTo(rb) < dist_threshold && ra.timestamp - time_lastMeet >= 3600) {
+				if (ra.distanceTo(rb) < dist_threshold) {
 					double wta = ua.locationWeight(ra);
 					double wtb = ub.locationWeight(rb);
 					double[] evnt = { wta,  wtb, ra.latitude, ra.longitude, ra.locID, rb.latitude, rb.longitude, ra.timestamp, rb.timestamp };
 					coloEnt.add(evnt);
-					time_lastMeet = ra.timestamp;
 				}
 //				if (ra.locID == rb.locID && ra.timestamp - time_lastMeet >= 3600 ) {
 //					double wta = ua.locationWeight(ra);
@@ -1004,14 +1004,14 @@ public class MiningFramework {
 	 * @return a map with each location ID as keys and the visiting frequency as values
 	 * 
 	 */
-	private static TreeMap<Long, Integer> locationDistribution( User ua ) {
-		TreeMap<Long, Integer> freq = new TreeMap<Long, Integer>();
+	private static TreeMap<String, Integer> locationDistribution( User ua ) {
+		TreeMap<String, Integer> freq = new TreeMap<String, Integer>();
 		for (Record r : ua.records) {
-			if (freq.containsKey(r.locID)) {
-				int tmp = freq.get(r.locID);
-				freq.put(r.locID, tmp + 1);
+			if (freq.containsKey(r.GPS())) {
+				int tmp = freq.get(r.GPS());
+				freq.put(r.GPS(), tmp + 1);
 			} else {
-				freq.put(r.locID, 1);
+				freq.put(r.GPS(), 1);
 			}
 		}
 		return freq;
@@ -1049,9 +1049,7 @@ public class MiningFramework {
 //		
 		
 
-//		distanceBasedSumLogMeasure(267 , 510 ,true);
-//		distanceBasedSumLogMeasure(350 , 6138 ,true);
-//		distanceBasedSumLogMeasure(39746, 39584, true);
+//		distanceBasedSumLogMeasure(8320 , 10244 ,true);
 		
 //		for (int i = 0; i < 10; i++) {
 //			User.para_c = 10 + i * 10;
@@ -1060,11 +1058,13 @@ public class MiningFramework {
 		
 //		for (int i = 1; i < 11; i++ )
 		
-		MiningFramework.event_time_exp_para_c = 0.2;
+//		MiningFramework.event_time_exp_para_c = 0.2;
 		writeOutDifferentMeasures(User.para_c, 101);
 		
 		
 //		locationDistancePowerLaw(2241);
+		
+//		pairAnalysis(8320, 10244);
 	}
 
 
